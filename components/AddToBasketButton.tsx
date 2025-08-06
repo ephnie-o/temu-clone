@@ -3,16 +3,20 @@
 import { Product } from "@/sanity.types"
 import useBasketStore from "@/store/store";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "./ui/button";
 
 interface AddToBasketButtonProps{
     product: Product;
     disabled?: boolean;
+    onAddToCart?: () => void;
 }
 
-function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
+function AddToBasketButton({ product, disabled, onAddToCart }: AddToBasketButtonProps) {
 
     const { addItem, removeItem, getItemCount } = useBasketStore();
     const itemCount = getItemCount(product._id);
+    const [quantity, setQuantity] = useState(() => (itemCount > 0 ? itemCount : 1));
 
     const [isClient, setIsClient] = useState(false)
 
@@ -20,37 +24,84 @@ function AddToBasketButton({ product, disabled }: AddToBasketButtonProps) {
         setIsClient(true)
     }, [])
 
+    useEffect(() => {
+        if (itemCount > 0) {
+            setQuantity(itemCount);
+        }
+    }, [itemCount]);
+
+    const increment = () => setQuantity(prev => prev + 1);
+    const decrement = () => setQuantity(prev => Math.max(1, prev - 1));
+
+    const handleAddToCart = () => {
+        for (let i = 0; i < quantity; i++) {
+            addItem(product);
+        }
+        toast.success("Added to cart", {
+            description: `${quantity} x ${product.name} added to your cart`,
+            position: "top-right"
+        });
+        onAddToCart?.();
+    };
+
+    const handleRemoveFromCart = () => {
+        for (let i = 0; i < quantity; i++) {
+            removeItem(product._id);
+        }
+        toast.info('Removed from cart', {
+            description: `${quantity} × ${product.name} removed from your cart`,
+            position: 'top-right',
+        });
+        onAddToCart?.();
+    };
+
     if(!isClient){
         return null;
     }
 
     return (
-        <div className="flex items-center justify-center space-x-2">
-            <button
-                onClick={() => removeItem(product._id)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                    itemCount === 0
-                        ? "bg-gray-100 cursor-not-allowed"
-                        : "bg-gray-200 hover:bg-gray-300"
-                }`}
-                disabled={itemCount === 0 || disabled}
-            >
-                <span className={`text-xl font-bold ${itemCount === 0 ? "text-gray-400" : "text-gray-600"}`}>
-                    -
-                </span>
-            </button>
-            <span className="w-8 text-center font-semibold">{itemCount}</span>
-            <button
-                onClick={() => addItem(product)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                    disabled
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-500 hover:bg-blue-600"
-                }`}
-                disabled={disabled}
-            >
-                <span className="text-xl font-bold text-white">+</span>
-            </button>
+        <div className="space-y-2">
+            <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
+                <button
+                    onClick={decrement}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        quantity <= 1 || itemCount > 0
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:bg-gray-200"
+                    }`}
+                    disabled={quantity <= 1 || itemCount > 0}
+                >
+                    <span className="text-xl font-bold">-</span>
+                </button>
+                <span className="w-8 text-center font-semibold">{quantity}</span>
+                <button
+                    onClick={increment}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        itemCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200'
+                    }`}
+                    disabled={itemCount > 0}
+                >
+                    <span className="text-xl font-bold">+</span>
+                </button>
+            </div>
+
+            {itemCount > 0 ? (
+                <Button
+                    onClick={handleRemoveFromCart}
+                    disabled={disabled}
+                    className="bg-red-500 hover:bg-red-600 text-white w-full"
+                >
+                    Remove from Cart
+                </Button>
+            ) : (
+                <Button
+                    onClick={handleAddToCart}
+                    disabled={disabled}
+                    className="bg-green-600 hover:bg-green-700 text-white w-full"
+                >
+                    Add to Cart
+                </Button>
+            )}
         </div>
     )
 }
