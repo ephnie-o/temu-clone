@@ -79,7 +79,7 @@ export default function Testimonials({ testimonials = [
                   <p className="text-xs text-gray-400 mt-1">{testimonial.date}</p>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm italic">"{testimonial.message}"</p>
+              <p className="text-gray-700 text-sm italic">&ldquo;{testimonial.message}&rdquo;</p>
               
               <div className="flex mt-4">
                 {[...Array(5)].map((_, i) => (
