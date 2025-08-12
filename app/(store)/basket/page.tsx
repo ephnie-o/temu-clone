@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -37,15 +37,20 @@ function BasketPage() {
     const [isClient, setIsClient] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
+    const totalPrice = useBasketStore((s) => s.getTotalPrice())
+
     useEffect(() => {
         setIsClient(true)
     }, [])
 
     const totals = useMemo(() => {
-        const items = groupedItems.reduce((sum: number, i: any) => sum + i.quantity, 0)
+        const items = (groupedItems as Array<{ quantity: number }>).reduce<number>(
+            (sum, item) => sum + item.quantity,
+            0
+        )
 
         return {items}
-    }, [])
+    }, [groupedItems])
 
     if (!isClient) {
         return <Loader />
@@ -165,13 +170,13 @@ function BasketPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                             <span>Subtotal</span>
-                            <span>£{useBasketStore.getState().getTotalPrice().toFixed(2)}</span>
+                            <span>£{totalPrice.toFixed(2)}</span>
                         </div>
 
                         <Separator />
                         <div className="flex items-center justify-between text-base font-semibold">
                             <span>Total</span>
-                            <span>£{useBasketStore.getState().getTotalPrice().toFixed(2)}</span>
+                            <span>£{totalPrice.toFixed(2)}</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Taxes, shipping and discounts calculated at checkout.
@@ -203,7 +208,7 @@ function BasketPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
                 <div>
                     <div className="text-xs text-muted-foreground">Total</div>
-                    <div className="text-lg font-semibold">£{useBasketStore.getState().getTotalPrice().toFixed(2)}</div>
+                    <div className="text-lg font-semibold">£{totalPrice.toFixed(2)}</div>
                 </div>
                 {isSignedIn ? (
                     <Button className={brandButton} onClick={handleCheckout} disabled={isLoading || totals.items === 0}>

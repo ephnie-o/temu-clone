@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Product } from '@/sanity.types';
 import ProductThumb from '@/components/ProductThumb';
-
-// Only needed if you want client-side fetch (dataset must be public)
 import { createClient, type SanityClient } from 'next-sanity';
 
 const client: SanityClient = createClient({
@@ -14,9 +12,15 @@ const client: SanityClient = createClient({
   useCdn: true,
 })
 
-type MinimalProduct = Pick<Product,
-  '_id' | 'name' | 'slug' | 'image' | 'price' | 'stock'
-> & { categories?: Array<{ _id?: string; _ref?: string }> };
+type CategoryIdRef = { _id?: string; _ref?: string };
+type MinimalProduct = Pick<Product, '_id' | 'name' | 'slug' | 'image' | 'price' | 'stock'> & {
+  categories?: CategoryIdRef[];
+};
+
+const getCategoryId = (c: CategoryIdRef | null | undefined): string | null =>
+  c?._id ?? c?._ref ?? null;
+
+const isNonNullString = (x: string | null): x is string => x !== null;
 
 export default function RelatedProducts({
   current,
@@ -47,15 +51,19 @@ export default function RelatedProducts({
   const related = useMemo(() => {
     if (!all) return [];
     const curIds = new Set(
-      (current.categories ?? []).map((c: any) => c?._id || c?._ref).filter(Boolean)
+      (current.categories ?? [])
+        .map(getCategoryId)
+        .filter(isNonNullString)
     );
 
     // Score by category overlap, then randomize
     const scored = all
       .filter((p) => p._id !== current._id)
       .map((p) => {
-        const ids = (p.categories ?? []).map((c: any) => c?._id || c?._ref);
-        const overlap = ids.reduce((acc, id) => acc + (curIds.has(id) ? 1 : 0), 0);
+        const ids = (p.categories ?? [])
+          .map(getCategoryId)
+          .filter(isNonNullString);
+        const overlap = ids.reduce<number>((acc, id) => acc + (curIds.has(id) ? 1 : 0), 0);
         return { p, overlap };
       })
       .sort((a, b) => (b.overlap - a.overlap) || (Math.random() - 0.5));
@@ -66,7 +74,7 @@ export default function RelatedProducts({
       .sort(() => Math.random() - 0.5)
       .slice(0, limit)
       .map((s) => s.p);
-  }, [all, current, limit]);
+  }, [all, current._id, current.categories, limit]);
 
   if (!related.length) return null;
 

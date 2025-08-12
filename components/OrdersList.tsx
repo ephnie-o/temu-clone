@@ -99,7 +99,8 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
                             src={imageUrl(product.product.image).url()}
                             alt={product.product?.name ?? ''}
                             className="object-cover"
-                            fill
+                            width={96}
+                            height={96}
                           />
                         </div>
                       )}

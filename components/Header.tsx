@@ -10,13 +10,16 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-
 type SearchItem = {
     id: string
     title: string
     price: number
     slug?: string | null
     url?: string | null
+}
+
+function isAbortError(err: unknown): err is DOMException {
+  return err instanceof DOMException && err.name === 'AbortError'
 }
 
 function SearchField({ mobile = false }: { mobile?: boolean }) {
@@ -31,7 +34,8 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
     const controllerRef = useRef<AbortController | null>(null)
     const debounceRef = useRef<number | null>(null)
 
-    // Debounced fetch with AbortController (prevents “stuck” states)
+    const listboxId = mobile ? "search-listbox-mobile" : "search-listbox-desktop"
+
     useEffect(() => {
         if (debounceRef.current) window.clearTimeout(debounceRef.current)
         debounceRef.current = window.setTimeout(async () => {
@@ -57,7 +61,7 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
                 setItems(Array.isArray(data) ? data : [])
                 setOpen(true)
             } catch (e) {
-                if ((e as any)?.name !== "AbortError") {
+                if (!isAbortError(e)) {
                     console.error(e)
                     setItems([])
                 }
@@ -78,20 +82,14 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
             if (!boxRef.current.contains(e.target as Node)) setOpen(false)
         }
 
-        const onClick = (e: MouseEvent) => {
-            if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-        }
-
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") setOpen(false)
         }
 
         document.addEventListener("pointerdown", onOutside)
-        document.addEventListener("mousedown", onClick)
         document.addEventListener("keydown", onKey)
 
         return () =>{
-            document.removeEventListener("mousedown", onClick)
             document.removeEventListener("keydown", onKey)
             document.removeEventListener("pointerdown", onOutside)
         }
@@ -125,8 +123,11 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
                     className="w-full border border-gray-200 rounded-full py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-green-400"
                     type="text"
                     inputMode="search"
-                    aria-autocomplete="list"
+                    role="combobox"
+                    aria-haspopup="listbox"
+                    aria-controls={listboxId}
                     aria-expanded={open}
+                    aria-autocomplete="list"
                 />
             </form>
 
@@ -138,6 +139,7 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
 
             {open && items.length > 0 && (
                 <div
+                    id={listboxId}
                     className="absolute left-0 right-0 top-11 bg-white border border-gray-200 rounded-xl shadow-lg z-[60] max-h-96 overflow-auto"
                     role="listbox"
                 >
@@ -145,6 +147,7 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
                         <div
                             key={item.id}
                             role="option"
+                            aria-selected="false"
                             className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer"
                             // Use pointerdown to navigate immediately (fixes mobile tap)
                             onPointerDown={(e) => {
@@ -154,7 +157,13 @@ function SearchField({ mobile = false }: { mobile?: boolean }) {
                         >
                             <div className="flex items-center min-w-0">
                                 {item.url ? (
-                                    <img src={item.url} alt={item.title} className="h-8 w-8 rounded object-cover" />
+                                    <Image
+                                        src={item.url}
+                                        alt={item.title}
+                                        width={32}
+                                        height={32}
+                                        className="h-8 w-8 rounded object-cover"
+                                    />
                                 ) : (
                                     <div className="h-8 w-8 rounded bg-gray-100" />
                                 )}
