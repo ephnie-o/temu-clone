@@ -1,10 +1,5 @@
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
-  CheckCircle,
-  Truck,
-  Headphones,
   Facebook,
   Twitter,
   Instagram,
@@ -15,7 +10,6 @@ export function Footer() {
   return (
     <footer className="bg-white text-[#2d3738]">
 
-      {/* ——————————————————————————————— */}
       {/* Main Links */}
       <div className="bg-green-900 text-xs text-gray-300 py-12 border-b border-b-gray-600">
         <div className="container mx-auto px-4 grid grid-cols-1 text-center sm:grid-cols-2 md:grid-cols-4 gap-8">
@@ -119,7 +113,6 @@ export function Footer() {
       </div>
 
       {/* Copyright */}
-      
         <div className="bg-green-900 text-gray-200 flex justify-between items-center px-12 py-4">
             <h4 className="font-semibold text-lg mb-4">We Accept</h4>
             <div className="flex space-x-4">

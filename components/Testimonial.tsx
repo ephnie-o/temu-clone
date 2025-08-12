@@ -10,7 +10,7 @@ interface Testimonial {
 }
 
 interface TestimonialsProps {
-  testimonials?: Testimonial[]; // Make it optional with default values
+  testimonials?: Testimonial[];
 }
 
 export default function Testimonials({ testimonials = [
@@ -55,7 +55,7 @@ export default function Testimonials({ testimonials = [
             What Our Customers Say
           </h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {testimonials.map((testimonial) => (
             <div
@@ -80,7 +80,7 @@ export default function Testimonials({ testimonials = [
                 </div>
               </div>
               <p className="text-gray-700 text-sm italic">&ldquo;{testimonial.message}&rdquo;</p>
-              
+
               <div className="flex mt-4">
                 {[...Array(5)].map((_, i) => (
                   <svg

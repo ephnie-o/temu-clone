@@ -1,7 +1,4 @@
-import BlackFridayBanner from "@/components/BlackFridayBanner";
 import HomeLayout from "@/components/HomeLayout";
-import ProductsView from "@/components/ProductsView";
-import { getAllCategories } from "@/sanity/lib/products/getAllCategories";
 import { getAllProducts } from "@/sanity/lib/products/getAllProducts";
 import ProductThumb from '@/components/ProductThumb';
 import Link from "next/link";
@@ -11,14 +8,8 @@ export const revalidate = 60;
 
 export default async function Home() {
   const products = await getAllProducts();
-  const categories = await getAllCategories();
 
   const featuredProducts = products.slice(0,4)
-
-  // console.log(
-  //   crypto.randomUUID().slice(0, 5) +
-  //     `>>> Rerendered the home page cache with ${products.length} products and ${categories.length} categories`
-  // )
 
   return (
       <HomeLayout>

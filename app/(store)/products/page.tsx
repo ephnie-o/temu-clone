@@ -15,8 +15,11 @@ async function Products() {
     )
 
     return (
-        <div className="flex-1">
-            <ProductsView products={products} categories={categories} />
+        <div className="bg-gray-50 min-h-screen">
+            <div className="container mx-auto">
+                {/* Main Content */}
+                <ProductsView products={products} categories={categories} />
+            </div>
         </div>
     )
 }

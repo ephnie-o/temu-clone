@@ -3,7 +3,7 @@
 import { Product } from "@/sanity.types"
 import useBasketStore from "@/store/store";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { Button } from "./ui/button";
 
 interface AddToBasketButtonProps{
@@ -37,9 +37,8 @@ function AddToBasketButton({ product, disabled, onAddToCart }: AddToBasketButton
         for (let i = 0; i < quantity; i++) {
             addItem(product);
         }
-        toast.success("Added to cart", {
-            description: `${quantity} x ${product.name} added to your cart`,
-            position: "top-right"
+        toast.success(`${quantity} × ${product.name} added to cart`, {
+            toastId: `add-${product._id}`,
         });
         onAddToCart?.();
     };
@@ -48,9 +47,8 @@ function AddToBasketButton({ product, disabled, onAddToCart }: AddToBasketButton
         for (let i = 0; i < quantity; i++) {
             removeItem(product._id);
         }
-        toast.info('Removed from cart', {
-            description: `${quantity} × ${product.name} removed from your cart`,
-            position: 'top-right',
+        toast.info(`${quantity} × ${product.name ?? 'item'} removed from your cart`, {
+            autoClose: 2000,
         });
         onAddToCart?.();
     };

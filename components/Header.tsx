@@ -2,15 +2,178 @@
 
 import { ClerkLoaded, SignedIn, SignInButton, UserButton, useUser } from "@clerk/nextjs"
 import Link from "next/link"
-import Form from "next/form"
+// import Form from "next/form"
 import { PackageIcon } from "@sanity/icons"
 import useBasketStore from "@/store/store"
-import { SearchIcon, ShoppingCartIcon } from "lucide-react"
+import { SearchIcon, ShoppingCartIcon, Loader2 } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
 
+
+type SearchItem = {
+    id: string
+    title: string
+    price: number
+    slug?: string | null
+    url?: string | null
+}
+
+function SearchField({ mobile = false }: { mobile?: boolean }) {
+    const router = useRouter()
+
+    const [query, setQuery] = useState("")
+    const [items, setItems] = useState<SearchItem[]>([])
+    const [loading, setLoading] = useState(false)
+    const [open, setOpen] = useState(false)
+
+    const boxRef = useRef<HTMLDivElement | null>(null)
+    const controllerRef = useRef<AbortController | null>(null)
+    const debounceRef = useRef<number | null>(null)
+
+    // Debounced fetch with AbortController (prevents “stuck” states)
+    useEffect(() => {
+        if (debounceRef.current) window.clearTimeout(debounceRef.current)
+        debounceRef.current = window.setTimeout(async () => {
+            const q = query.trim()
+            if (!q) {
+                setItems([])
+                setLoading(false)
+                setOpen(false)
+                return
+            }
+
+            controllerRef.current?.abort()
+            const ctrl = new AbortController()
+            controllerRef.current = ctrl
+
+            setLoading(true)
+            try {
+                const res = await fetch(
+                    `/search-by-name/${encodeURIComponent(q)}`,
+                    { signal: ctrl.signal }
+                )
+                const data = await res.json()
+                setItems(Array.isArray(data) ? data : [])
+                setOpen(true)
+            } catch (e) {
+                if ((e as any)?.name !== "AbortError") {
+                    console.error(e)
+                    setItems([])
+                }
+            } finally {
+                setLoading(false)
+            }
+        }, 350)
+
+        return () => {
+            if (debounceRef.current) window.clearTimeout(debounceRef.current)
+        }
+    }, [query])
+
+    // Close on outside pointerdown (doesn’t fight with mobile taps)
+    useEffect(() => {
+        const onOutside = (e: PointerEvent) => {
+            if (!boxRef.current) return
+            if (!boxRef.current.contains(e.target as Node)) setOpen(false)
+        }
+
+        const onClick = (e: MouseEvent) => {
+            if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+        }
+
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setOpen(false)
+        }
+
+        document.addEventListener("pointerdown", onOutside)
+        document.addEventListener("mousedown", onClick)
+        document.addEventListener("keydown", onKey)
+
+        return () =>{
+            document.removeEventListener("mousedown", onClick)
+            document.removeEventListener("keydown", onKey)
+            document.removeEventListener("pointerdown", onOutside)
+        }
+    }, [])
+
+    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const q = query.trim()
+        if (!q) return
+        setOpen(false)
+        router.push(`/search?query=${encodeURIComponent(q)}`)
+    }
+
+    const go = (item: SearchItem) => {
+        setOpen(false)
+        router.push(item.slug ? `/product/${item.slug}` : `/product/${item.id}`)
+    }
+
+    return (
+        <div className={`relative ${mobile ? "" : "max-w-2xl mx-auto"}`} ref={boxRef}>
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <SearchIcon className="h-5 w-5 text-gray-400" />
+            </div>
+
+            <form onSubmit={onSubmit}>
+                <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => items.length > 0 && setOpen(true)}
+                    placeholder="Search for products"
+                    className="w-full border border-gray-200 rounded-full py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    type="text"
+                    inputMode="search"
+                    aria-autocomplete="list"
+                    aria-expanded={open}
+                />
+            </form>
+
+            {loading && (
+                <div className="absolute inset-y-0 right-3 flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                </div>
+            )}
+
+            {open && items.length > 0 && (
+                <div
+                    className="absolute left-0 right-0 top-11 bg-white border border-gray-200 rounded-xl shadow-lg z-[60] max-h-96 overflow-auto"
+                    role="listbox"
+                >
+                    {items.map((item) => (
+                        <div
+                            key={item.id}
+                            role="option"
+                            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                            // Use pointerdown to navigate immediately (fixes mobile tap)
+                            onPointerDown={(e) => {
+                                e.preventDefault()
+                                go(item)
+                            }}
+                        >
+                            <div className="flex items-center min-w-0">
+                                {item.url ? (
+                                    <img src={item.url} alt={item.title} className="h-8 w-8 rounded object-cover" />
+                                ) : (
+                                    <div className="h-8 w-8 rounded bg-gray-100" />
+                                )}
+                                <span className="ml-2 text-sm text-gray-700 truncate">{item.title}</span>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-900 font-medium">
+                                £{item.price.toFixed(2)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
 
 function Header() {
     const { user } = useUser()
+
     const itemCount = useBasketStore((state) =>
         state.items.reduce((total, item) => total + item.quantity, 0)
     )
@@ -35,7 +198,7 @@ function Header() {
                         <Image src="/logo.jpg" alt="Stereda Pharmacy" width={40} height={40} />
                     </Link>
 
-                    <button className="md:hidden p-2 text-gray-500">
+                    {/* <button className="md:hidden p-2 text-gray-500">
                         <div className="relative max-w-2xl mx-auto">
                             <div className="absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon className="h-5 w-5 text-gray-400" />
@@ -62,7 +225,11 @@ function Header() {
                                 />
                             </Form>
                         </div>
-                    </button>
+                    </button> */}
+
+                    <div className="md:hidden flex-1 mx-4">
+                        <SearchField mobile />
+                    </div>
 
                     <div className="hidden md:flex items-center space-x-4">
                         <ClerkLoaded>
@@ -115,7 +282,7 @@ function Header() {
                     </div>
                 </div>
 
-                <div className="hidden md:block pb-3 md:pb-4">
+                {/* <div className="hidden md:block pb-3 md:pb-4">
                     <div className="relative max-w-2xl mx-auto">
                         <div className="absolute inset-y-0 left-3 flex items-center">
                             <SearchIcon className="h-5 w-5 text-gray-400" />
@@ -142,7 +309,12 @@ function Header() {
                             />
                         </Form>
                     </div>
+                </div> */}
+
+                <div className="hidden md:block pb-3 md:pb-4">
+                    <SearchField />
                 </div>
+
                 <div className="md:hidden flex items-center justify-between pb-3 space-x-4">
                     <ClerkLoaded>
                         {user ? (

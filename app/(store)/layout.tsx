@@ -6,9 +6,9 @@ import { SanityLive } from "@/sanity/lib/live";
 import { draftMode } from "next/headers";
 import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { VisualEditing } from "next-sanity";
-import { Toaster } from "sonner";
 import { Footer } from "@/components/Footer";
 import Category from "@/components/Categories";
+import ToastProvider from "@/components/ToastProvider";
 
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default async function RootLayout({
     <ClerkProvider dynamic>
       <html lang="en">
         <body>
-          <Toaster />
+          <ToastProvider />
           {(await draftMode()).isEnabled && (
             <>
               <DisableDraftMode />

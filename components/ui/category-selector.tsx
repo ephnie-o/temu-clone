@@ -56,7 +56,7 @@ export function CategorySelectorComponent({
     if (isDesktop) {
         return (
             <div className="w-full space-y-2">
-                <h3 className="font-medium text-gray-700 px-2">Categories</h3>
+                <h3 className="md:hidden font-medium text-gray-700 px-2">Categories</h3>
                 <Command className="rounded-lg border border-gray-200 bg-white">
                     <CommandInput
                         placeholder="Search health categories..."
@@ -112,7 +112,7 @@ export function CategorySelectorComponent({
                 >
                     {value
                         ? categories.find((category) => category._id === value)?.title
-                        : "All Categories"
+                        : "All Products"
                     }
 
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

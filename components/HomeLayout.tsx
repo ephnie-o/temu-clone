@@ -1,17 +1,11 @@
-// components/HomeLayout.tsx
-
 import { ReactNode } from 'react';
-import { getAllCategories } from '@/sanity/lib/products/getAllCategories';
-import BlackFridayBanner from '@/components/BlackFridayBanner';
 import Hero from './HeroSection';
 import Features from './Features';
 import PromoCarousel from './PromoCarousel';
 import Testimonials from './Testimonial';
-import Category from './Categories';
 
 
 export default async function HomeLayout({ children }: { children: ReactNode }) {
-    const categories = await getAllCategories();
 
     return (
         <div className="bg-white">
@@ -28,7 +22,6 @@ export default async function HomeLayout({ children }: { children: ReactNode }) 
             </div>
             <Testimonials />
 
-            {/* <TrustBadges /> */}
         </div>
     );
 }

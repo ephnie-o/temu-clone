@@ -1,15 +1,30 @@
 'use client'
 
 import { createCheckoutSession, Metadata } from "@/actions/createCheckoutSession"
-import AddToBasketButton from "@/components/AddToBasketButton"
 import Loader from "@/components/Loader"
 import { imageUrl } from "@/lib/imageUrl"
 import useBasketStore from "@/store/store"
 import { SignInButton, useAuth, useUser } from "@clerk/nextjs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { toast } from "react-toastify"
 
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
+import QuantityStepper from "@/components/QuantityStepper"
+
+const brandButton = 'bg-green-600 hover:bg-green-700 text-white'
+
+function formatGBP(value: number) {
+    try {
+        return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(value)
+    } catch {
+        return `£${value.toFixed(2)}`
+    }
+}
 
 
 function BasketPage() {
@@ -26,15 +41,29 @@ function BasketPage() {
         setIsClient(true)
     }, [])
 
+    const totals = useMemo(() => {
+        const items = groupedItems.reduce((sum: number, i: any) => sum + i.quantity, 0)
+
+        return {items}
+    }, [])
+
     if (!isClient) {
         return <Loader />
     }
 
     if (groupedItems.length === 0) {
         return (
-            <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh]">
-                <h1 className="text-2xl font-bold mb-6 text-gray-800">Your Basket</h1>
-                <p className="text-gray-600 text-lg">Your basket is empty</p>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
+                <div className="text-center bg-white rounded-xl shadow-sm p-8">
+                    <h1 className="text-xl font-bold tracking-wide text-gray-900 mb-4">Your Shopping Basket</h1>
+                    <p className="text-gray-500 mb-6 text-sm">Your basket is currently empty</p>
+                    <button
+                        onClick={() => router.push('/products')}
+                        className="text-sm bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md cursor-pointer hover:bg-green-900 transition-all"
+                    >
+                        Continue Shopping
+                    </button>
+                </div>
             </div>
         )
     }
@@ -55,9 +84,12 @@ function BasketPage() {
 
             if (checkoutUrl) {
                 window.location.href = checkoutUrl;
+            } else {
+                toast.error('Could not start checkout. Please try again.')
             }
         } catch (error) {
             console.error("Error creating checkout session:", error)
+            toast.error('Checkout failed. Please try again.')
         } finally {
             setIsLoading(false)
         }
@@ -65,85 +97,124 @@ function BasketPage() {
 
     return (
         <div className="container mx-auto p-4 max-w-6xl">
-            <h1 className="text-2xl font-bold mb-4">Your Basket</h1>
-            <div className="flex flex-col lg:flex-row gap-8">
-                <div className="flex-grow">
+            <div className="flex items-baseline justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Your Basket</h1>
+                <Badge variant="secondary" className="text-base">{totals.items} items</Badge>
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-12">
+                <div className="lg:col-span-8 space-y-4">
                     {groupedItems?.map(item => (
-                        <div
-                            key={item.product._id}
-                            className="mb-4 p-4 border rounded flex items-center justify-between"
-                        >
-                            <div
-                                className="flex items-center cursor-pointer flex-1 min-w-0"
-                                onClick={() =>
-                                    router.push(`product/${item.product.slug?.current}`)
-                                }
-                            >
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 mr-4">
-                                    {item.product.image && (
-                                        <Image
-                                            src={imageUrl(item.product.image).url()}
-                                            alt={item.product.name ?? "Product image"}
-                                            className="w-full h-full object-cover rounded"
-                                            width={96}
-                                            height={96}
-                                        />
-                                    )}
-                                </div>
-                                <div className="min-w-0">
-                                    <h2 className="text-lg sm:text-xl font-semibold truncate">
-                                        {item.product.name}
-                                    </h2>
-                                    <p className="text-sm sm:text-base">
-                                        Price: £
-                                        {((item.product.price ?? 0) * item.quantity).toFixed(2)}
-                                    </p>
-                                </div>
-                            </div>
-                            
+                        <Card key={item.product._id} className="overflow-hidden">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        onClick={() => router.push(`/product/${item.product.slug?.current}`)}
+                                        aria-label={`View ${item.product.name}`}
+                                    >
+                                        {item.product.image && (
+                                            <Image
+                                                src={imageUrl(item.product.image).url()}
+                                                alt={item.product.name ?? 'Product image'}
+                                                fill
+                                                sizes="80px"
+                                                className="object-cover"
+                                            />
+                                        )}
+                                    </button>
 
-                            <div className="flex items-center ml-4 flex-shrink-0">
-                                <AddToBasketButton product={item.product} />
-                            </div>
-                        </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h2 className="truncate text-base font-semibold leading-6">
+                                            {item.product.name}
+                                            </h2>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                            Unit: {formatGBP(item.product.price ?? 0)}
+                                            </p>
+                                        </div>
+
+                                        <div className="text-right">
+                                            <p className="text-sm text-muted-foreground">Subtotal</p>
+                                            <p className="text-lg font-semibold">
+                                                {formatGBP((item.product.price ?? 0) * item.quantity)}
+                                            </p>
+                                        </div>
+                                        </div>
+
+                                        <div className="mt-3 flex items-center justify-between gap-3">
+                                            <QuantityStepper product={item.product} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
 
-                <div className="w-full lg:w-80 lg:sticky lg:top-4 h-fit bg-white p-6 border rounded order-first lg:order-last fixed bottom-0 left-0 lg:left-auto">
-                    <h3 className="text-xl font-semibold">Order Summary</h3>
-                    <div className="mt-4 space-y-2">
-                        <p className="flex justify-between">
-                            <span>Items:</span>
-                            <span>
-                                {groupedItems.reduce((total, item) => total + item.quantity, 0)}
-                            </span>
-                        </p>
-                        <p className="flex justify-between text-2xl font-bold border-t pt-2">
-                            <span>Total:</span>
-                            <span>
-                                £{useBasketStore.getState().getTotalPrice().toFixed(2)}
-                            </span>
-                        </p>
-                    </div>
+                <div className="lg:col-span-4">
+                    <Card className="sticky top-20">
+                        <CardHeader>
+                            <CardTitle>Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
 
-                    {isSignedIn ? (
-                        <button
+                        <div className="flex justify-between text-sm">
+                            <span>Items</span>
+                            <span>{totals.items}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span>Subtotal</span>
+                            <span>£{useBasketStore.getState().getTotalPrice().toFixed(2)}</span>
+                        </div>
+
+                        <Separator />
+                        <div className="flex items-center justify-between text-base font-semibold">
+                            <span>Total</span>
+                            <span>£{useBasketStore.getState().getTotalPrice().toFixed(2)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Taxes, shipping and discounts calculated at checkout.
+                        </p>
+
+                        {isSignedIn ? (
+                            <Button
+                            className={`w-full ${brandButton}`}
+                            size="lg"
                             onClick={handleCheckout}
-                            disabled={isLoading}
-                            className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                        >
-                            {isLoading ? "Processing..." : "Checkout"}
-                        </button>
-                    ) : (
-                        <SignInButton mode="modal">
-                            <button className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                Sign in to Checkout
-                            </button>
-                        </SignInButton>
-                    )}
+                            disabled={isLoading || totals.items === 0}
+                            >
+                            {isLoading ? 'Processing…' : 'Checkout'}
+                            </Button>
+                        ) : (
+                            <SignInButton mode="modal">
+                            <Button className={`w-full ${brandButton}`} size="lg">
+                                Sign in to checkout
+                            </Button>
+                            </SignInButton>
+                        )}
+                        </CardContent>
+                    </Card>
                 </div>
+            </div>
 
-                <div className="h-64 lg:h-0"></div>
+            {/* Mobile checkout bar */}
+            <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+                <div>
+                    <div className="text-xs text-muted-foreground">Total</div>
+                    <div className="text-lg font-semibold">£{useBasketStore.getState().getTotalPrice().toFixed(2)}</div>
+                </div>
+                {isSignedIn ? (
+                    <Button className={brandButton} onClick={handleCheckout} disabled={isLoading || totals.items === 0}>
+                    {isLoading ? 'Processing…' : 'Checkout'}
+                    </Button>
+                ) : (
+                    <SignInButton mode="modal">
+                    <Button className={brandButton}>Sign in</Button>
+                    </SignInButton>
+                )}
+                </div>
             </div>
         </div>
     )

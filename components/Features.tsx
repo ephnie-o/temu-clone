@@ -1,4 +1,3 @@
-// components/Features.tsx
 import { TruckIcon, CreditCardIcon, ShieldCheckIcon, HeadsetIcon } from 'lucide-react';
 
 const features = [
