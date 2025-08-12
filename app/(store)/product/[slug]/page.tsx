@@ -24,7 +24,7 @@ function sample<T>(arr: T[], n: number): T[] {
 async function ProductPage({
     params,
 }: {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 }) {
     const { slug } = await params;
     const product = await getProductBySlug(slug);
